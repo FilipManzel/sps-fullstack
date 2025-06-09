@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Správa jídelníčku školní jídelny</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f6f8fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2em auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+            padding: 2em 2em 1em 2em;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2d5c8a;
+            margin-bottom: 1.5em;
+        }
+
+        form {
+            display: flex;
+            gap: 1em;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 1.5em;
+        }
+
+        input[type="text"],
+        input[type="date"] {
+            padding: 0.5em;
+            border: 1px solid #bfc9d1;
+            border-radius: 5px;
+            font-size: 1em;
+            background: #f9fafb;
+            transition: border 0.2s;
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus {
+            border: 1.5px solid #2d5c8a;
+            outline: none;
+        }
+
+        button {
+            background: #2d5c8a;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 0.5em 1.2em;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #1b3a57;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1em;
+            background: #f9fafb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            border: 1px solid #e0e6ed;
+            padding: 0.7em 0.5em;
+            text-align: center;
+        }
+
+        th {
+            background: #eaf1f8;
+            color: #2d5c8a;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #f3f6fa;
+        }
+
+        tr:hover {
+            background: #e0e6ed;
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                padding: 1em 0.2em;
+            }
+
+            form {
+                flex-direction: column;
+                gap: 0.5em;
+            }
+
+            table,
+            thead,
+            tbody,
+            th,
+            td,
+            tr {
+                font-size: 0.95em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Správa jídelníčku školní jídelny</h1>
+        <form id="addForm">
+            <input type="date" id="den" required>
+            <input type="text" id="nazev_jidla" placeholder="Název jídla" required>
+            <input type="text" id="popis" placeholder="Popis">
+            <button type="submit">Přidat</button>
+        </form>
+        <table id="jidelnicekTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Den</th>
+                    <th>Název jídla</th>
+                    <th>Popis</th>
+                    <th>Akce</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <script>
+            async function fetchJidelnicek() {
+                const res = await fetch('/api/jidelnicek');
+                const jidla = await res.json();
+                const tbody = document.querySelector('#jidelnicekTable tbody');
+                tbody.innerHTML = '';
+                if (!Array.isArray(jidla)) {
+                    tbody.innerHTML = `<tr><td colspan="5">Chyba: ${jidla.error || 'Neznámá chyba'}</td></tr>`;
+                    return;
+                }
+                jidla.forEach(jidlo => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+        <td>${jidlo.id}</td>
+        <td><input type="date" value="${jidlo.den}" data-id="${jidlo.id}" class="edit-den"></td>
+        <td><input value="${jidlo.nazev_jidla}" data-id="${jidlo.id}" class="edit-nazev"></td>
+        <td><input value="${jidlo.popis || ''}" data-id="${jidlo.id}" class="edit-popis"></td>
+        <td>
+            <button onclick="updateJidlo(${jidlo.id})">Upravit</button>
+            <button onclick="deleteJidlo(${jidlo.id})">Smazat</button>
+        </td>
+    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            document.getElementById('addForm').onsubmit = async (e) => {
+                e.preventDefault();
+                const den = document.getElementById('den').value;
+                const nazev_jidla = document.getElementById('nazev_jidla').value;
+                const popis = document.getElementById('popis').value;
+                await fetch('/api/jidelnicek', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ den, nazev_jidla, popis })
+                });
+                e.target.reset();
+                fetchJidelnicek();
+            };
+
+            window.updateJidlo = async (id) => {
+                const den = document.querySelector(`.edit-den[data-id="${id}"]`).value;
+                const nazev_jidla = document.querySelector(`.edit-nazev[data-id="${id}"]`).value;
+                const popis = document.querySelector(`.edit-popis[data-id="${id}"]`).value;
+                await fetch(`/api/jidelnicek/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ den, nazev_jidla, popis })
+                });
+                fetchJidelnicek();
+            };
+
+            window.deleteJidlo = async (id) => {
+                await fetch(`/api/jidelnicek/${id}`, { method: 'DELETE' });
+                fetchJidelnicek();
+            };
+
+            fetchJidelnicek();
+        </script>
+
+
+
+
+</html></body>    </div>    </div>
+</body>
+
+</html>

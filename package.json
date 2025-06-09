@@ -1,0 +1,23 @@
+{
+  "name": "sps-fullstack",
+  "version": "1.0.0",
+  "description": "Sprava jidelnicku",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node seed.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FilipManzel/spsfullstack.git"
+  },
+  "author": "Filip Manžel",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/FilipManzel/spsfullstack/issues"
+  },
+  "homepage": "https://github.com/FilipManzel/spsfullstack#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
